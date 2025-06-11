@@ -268,7 +268,9 @@
 
                 <div id="imageControls" class="hidden">
                     <button class="btn btn-secondary" onclick="retakePhoto()">🔄 Retake</button>
-                    <button class="btn btn-success" onclick="analyzeImage()">✨ Generate AI Version</button>
+                    <button class="btn btn-success" id="generateBtn" onclick="analyzeImage()">✨ Generate AI Version</button>
+                    <button id="saveBtn" class="btn btn-success hidden" onclick="saveImage()">💾 Save to Device</button>
+                    <button id="galleryBtn" class="btn hidden" onclick="addToGallery()">🖼️ Add to Gallery</button>
                 </div>
             </div>
 
@@ -438,6 +440,9 @@
             capturedImageDataUrl = null;
             generatedImageUrl = null;
             hideStatus();
+            document.getElementById('saveBtn').classList.add('hidden');
+            document.getElementById('galleryBtn').classList.add('hidden');
+            document.getElementById('generateBtn').textContent = '✨ Generate AI Version';
         }
 
         function stopCamera() {
@@ -502,9 +507,13 @@
                 });
 
                 generatedImageUrl = result.url;
-                
-                document.getElementById('generatedImage').src = generatedImageUrl;
-                document.getElementById('resultSection').classList.remove('hidden');
+                capturedImageDataUrl = generatedImageUrl; // So we can regenerate from the AI image
+
+                document.getElementById('imagePreview').src = generatedImageUrl;
+
+                document.getElementById('saveBtn').classList.remove('hidden');
+                document.getElementById('galleryBtn').classList.remove('hidden');
+                document.getElementById('generateBtn').textContent = '✨ Regenerate';
                 
                 hideProgress();
                 showStatus('AI version generated successfully! 🎉', 'success');
@@ -614,4 +623,3 @@
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
-
