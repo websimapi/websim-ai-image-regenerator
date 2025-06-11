@@ -249,115 +249,117 @@ function App() {
             </div>
 
             <div className="nav-tabs">
-                <div className={`nav-tab ${activeTab === 'camera' ? 'active' : ''}`} onClick={() => setActiveTab('camera')}>📷 Camera</div>
+                <div className={`nav-tab ${activeTab === 'camera' ? 'active' : ''}`} onClick={() => setActiveTab('camera')}>📷 Create</div>
                 <div className={`nav-tab ${activeTab === 'gallery' ? 'active' : ''}`} onClick={() => setActiveTab('gallery')}>🖼️ Gallery</div>
             </div>
+            
+            <div className="main-content">
+                <div id="cameraTab" className={activeTab !== 'camera' ? 'hidden' : ''}>
+                    <div className="section camera-section">
+                        {showCameraControls && (
+                            <div id="cameraControls">
+                                <button className="btn" onClick={startCamera}>📷 Start Camera</button>
+                                <button className="btn btn-secondary" onClick={() => fileInputRef.current.click()}>📁 Choose File</button>
+                                <input type="file" ref={fileInputRef} id="fileInput" accept="image/*" onChange={handleFileSelect} />
+                            </div>
+                        )}
+                        
+                        <video id="videoPreview" ref={videoRef} autoPlay muted playsinline style={{ display: showCaptureControls ? 'block' : 'none' }}></video>
+                        
+                        {showImagePreview && (
+                            <img id="imagePreview" src={capturedImageDataUrl} alt="Captured or generated image" />
+                        )}
 
-            <div id="cameraTab" className={activeTab !== 'camera' ? 'hidden' : ''}>
-                <div className="section camera-section">
-                    {showCameraControls && (
-                        <div id="cameraControls">
-                            <button className="btn" onClick={startCamera}>📷 Start Camera</button>
-                            <button className="btn btn-secondary" onClick={() => fileInputRef.current.click()}>📁 Choose File</button>
-                            <input type="file" ref={fileInputRef} id="fileInput" accept="image/*" onChange={handleFileSelect} />
-                        </div>
-                    )}
-                    
-                    <video id="videoPreview" ref={videoRef} autoPlay muted playsinline style={{ display: showCaptureControls ? 'block' : 'none' }}></video>
-                    
+                        {showCaptureControls && (
+                            <div id="captureControls">
+                                <button className="btn" onClick={capturePhoto}>📸 Capture</button>
+                                <button className="btn btn-secondary" onClick={stopCamera}>❌ Stop</button>
+                            </div>
+                        )}
+
+                        {showImagePreview && (
+                            <div id="imageControls">
+                                <button className="btn btn-secondary" onClick={retakePhoto}>🔄 Retake</button>
+                                <button className="btn btn-success" onClick={analyzeAndGenerate} disabled={isGenerating}>
+                                    {isGenerating ? 'Generating...' : (generatedImageUrl ? '✨ Regenerate' : '✨ Generate AI Version')}
+                                </button>
+                                {generatedImageUrl && (
+                                    <>
+                                        <button className="btn btn-success" onClick={saveImageToDevice}>💾 Save to Device</button>
+                                        <button className="btn" onClick={addToGallery}>🖼️ Add to Gallery</button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
                     {showImagePreview && (
-                        <img id="imagePreview" src={capturedImageDataUrl} alt="Captured or generated image" />
-                    )}
-
-                    {showCaptureControls && (
-                        <div id="captureControls">
-                            <button className="btn" onClick={capturePhoto}>📸 Capture</button>
-                            <button className="btn btn-secondary" onClick={stopCamera}>❌ Stop</button>
+                        <div className="section style-selector">
+                            <label>Choose Generation Style:</label>
+                            <div className="style-grid">
+                                {Object.entries(STYLES).map(([key, { name }]) => (
+                                    <div 
+                                        key={key}
+                                        className={`style-option ${selectedStyle === key ? 'selected' : ''}`}
+                                        data-style={key}
+                                        onClick={() => setSelectedStyle(key)}
+                                    >
+                                        {name}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
-                    {showImagePreview && (
-                        <div id="imageControls">
-                            <button className="btn btn-secondary" onClick={retakePhoto}>🔄 Retake</button>
-                            <button className="btn btn-success" onClick={analyzeAndGenerate} disabled={isGenerating}>
-                                {isGenerating ? 'Generating...' : (generatedImageUrl ? '✨ Regenerate' : '✨ Generate AI Version')}
-                            </button>
-                            {generatedImageUrl && (
-                                <>
-                                    <button className="btn btn-success" onClick={saveImageToDevice}>💾 Save to Device</button>
-                                    <button className="btn" onClick={addToGallery}>🖼️ Add to Gallery</button>
-                                </>
-                            )}
+                    {isGenerating && (
+                        <div className="progress-bar" style={{ display: 'block' }}>
+                            <div className="progress-fill" style={{ width: `${progress}%`, animation: 'pulse 2s infinite' }}></div>
                         </div>
+                    )}
+
+                    {status.message && (
+                        <div className="status-message" style={{ display: 'block' }}>{status.message}</div>
                     )}
                 </div>
 
-                {showImagePreview && (
-                    <div className="section style-selector">
-                        <label>Choose Generation Style:</label>
-                        <div className="style-grid">
-                            {Object.entries(STYLES).map(([key, { name }]) => (
-                                <div 
-                                    key={key}
-                                    className={`style-option ${selectedStyle === key ? 'selected' : ''}`}
-                                    data-style={key}
-                                    onClick={() => setSelectedStyle(key)}
-                                >
-                                    {name}
+                <div id="galleryTab" className={activeTab !== 'gallery' ? 'hidden' : ''}>
+                    <div className="section gallery-section" style={{display: 'block'}}>
+                        <h3>Community AI Gallery</h3>
+                        {galleryLoading && <p style={{textAlign: 'center', marginTop: '20px'}}>Loading gallery...</p>}
+                        <div className="gallery-grid">
+                            {galleryItems && galleryItems.map(item => (
+                                <div className="gallery-item" key={item.id} title={`Created by ${item.username}`}>
+                                    <img 
+                                        src={item.url} 
+                                        alt={`AI Generated Image in ${item.style} style by ${item.username}`} 
+                                        loading="lazy" 
+                                        onClick={() => window.open(item.url, '_blank')} 
+                                    />
+                                    <div className="gallery-item-info">
+                                        <p className="gallery-item-style">{STYLES[item.style]?.name || item.style}</p>
+                                        <p className="gallery-item-user">by {item.username}</p>
+                                    </div>
+                                    {currentUser && item.user_id === currentUser.id && (
+                                        <button 
+                                            className="delete-btn" 
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Prevent opening image when clicking delete
+                                                handleDeleteFromGallery(item.id);
+                                            }}
+                                            title="Delete image"
+                                        >
+                                            &times;
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
-
-                {isGenerating && (
-                    <div className="progress-bar" style={{ display: 'block' }}>
-                        <div className="progress-fill" style={{ width: `${progress}%`, animation: 'pulse 2s infinite' }}></div>
-                    </div>
-                )}
-
-                {status.message && (
-                    <div className="status-message" style={{ display: 'block' }}>{status.message}</div>
-                )}
-            </div>
-
-            <div id="galleryTab" className={activeTab !== 'gallery' ? 'hidden' : ''}>
-                <div className="section gallery-section" style={{display: 'block'}}>
-                    <h3>Community AI Gallery</h3>
-                    {galleryLoading && <p style={{textAlign: 'center', marginTop: '20px'}}>Loading gallery...</p>}
-                    <div className="gallery-grid">
-                        {galleryItems && galleryItems.map(item => (
-                            <div className="gallery-item" key={item.id} title={`Created by ${item.username}`}>
-                                <img 
-                                    src={item.url} 
-                                    alt={`AI Generated Image in ${item.style} style by ${item.username}`} 
-                                    loading="lazy" 
-                                    onClick={() => window.open(item.url, '_blank')} 
-                                />
-                                <div className="gallery-item-info">
-                                    <p className="gallery-item-style">{STYLES[item.style]?.name || item.style}</p>
-                                    <p className="gallery-item-user">by {item.username}</p>
-                                </div>
-                                {currentUser && item.user_id === currentUser.id && (
-                                    <button 
-                                        className="delete-btn" 
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Prevent opening image when clicking delete
-                                            handleDeleteFromGallery(item.id);
-                                        }}
-                                        title="Delete image"
-                                    >
-                                        &times;
-                                    </button>
-                                )}
+                        {!galleryLoading && galleryItems && galleryItems.length === 0 && (
+                            <div id="emptyGallery" style={{ textAlign: 'center', opacity: 0.7, marginTop: '40px' }}>
+                                <p>The gallery is empty. Be the first to create something! 🎨</p>
                             </div>
-                        ))}
+                        )}
                     </div>
-                    {!galleryLoading && galleryItems && galleryItems.length === 0 && (
-                        <div id="emptyGallery" style={{ textAlign: 'center', opacity: 0.7, marginTop: '40px' }}>
-                            <p>The gallery is empty. Be the first to create something! 🎨</p>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
