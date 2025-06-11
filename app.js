@@ -29,6 +29,9 @@ function App() {
     const [progress, setProgress] = useState(0);
     const progressIntervalRef = useRef(null);
 
+    // User State
+    const [currentUser, setCurrentUser] = useState(null);
+
     // Element Refs
     const videoRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -40,12 +43,27 @@ function App() {
                 gi.id,
                 gi.url,
                 gi.style,
+                gi.user_id, -- Ensure user_id is selected
                 u.username
             FROM public.gallery_images gi
             JOIN public.user u ON gi.user_id = u.id
             ORDER BY gi.created_at DESC
         `)
     );
+
+    // Fetch current user
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const user = await window.websim.getCurrentUser();
+                setCurrentUser(user);
+            } catch (error) {
+                console.error("Error fetching current user:", error);
+                showStatus('Could not fetch user information.', 'error');
+            }
+        };
+        fetchCurrentUser();
+    }, []);
 
     const showStatus = useCallback((message, type = 'info', duration = 3000) => {
         setStatus({ message, type });
@@ -200,6 +218,19 @@ function App() {
             showStatus('Could not add to gallery. Please try again.', 'error');
         }
     };
+
+    const handleDeleteFromGallery = async (imageId) => {
+        if (!window.confirm("Are you sure you want to delete this image from the gallery?")) return;
+        
+        showStatus('Deleting image...', 'info', 60000);
+        try {
+            await room.collection('gallery_images').delete(imageId);
+            showStatus('Image removed from gallery! 🗑️', 'success');
+        } catch (error) {
+            console.error('Error deleting image from gallery:', error);
+            showStatus('Could not remove image. Please try again or check permissions.', 'error');
+        }
+    };
     
     // Effect for camera cleanup
     useEffect(() => {
@@ -296,12 +327,29 @@ function App() {
                     {galleryLoading && <p style={{textAlign: 'center', marginTop: '20px'}}>Loading gallery...</p>}
                     <div className="gallery-grid">
                         {galleryItems && galleryItems.map(item => (
-                            <div className="gallery-item" key={item.id} onClick={() => window.open(item.url, '_blank')} title={`Created by ${item.username}`}>
-                                <img src={item.url} alt={`AI Generated Image in ${item.style} style by ${item.username}`} loading="lazy" />
+                            <div className="gallery-item" key={item.id} title={`Created by ${item.username}`}>
+                                <img 
+                                    src={item.url} 
+                                    alt={`AI Generated Image in ${item.style} style by ${item.username}`} 
+                                    loading="lazy" 
+                                    onClick={() => window.open(item.url, '_blank')} 
+                                />
                                 <div className="gallery-item-info">
                                     <p className="gallery-item-style">{STYLES[item.style]?.name || item.style}</p>
                                     <p className="gallery-item-user">by {item.username}</p>
                                 </div>
+                                {currentUser && item.user_id === currentUser.id && (
+                                    <button 
+                                        className="delete-btn" 
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent opening image when clicking delete
+                                            handleDeleteFromGallery(item.id);
+                                        }}
+                                        title="Delete image"
+                                    >
+                                        &times;
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>

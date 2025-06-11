@@ -189,6 +189,35 @@ body {
     object-fit: cover;
 }
 
+.gallery-item .delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(238, 90, 36, 0.8); /* Using a theme color */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 28px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out, background-color 0.2s;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.gallery-item:hover .delete-btn {
+    opacity: 1;
+}
+
+.gallery-item .delete-btn:hover {
+    background-color: rgba(255, 107, 107, 1); /* Brighter red on hover */
+}
+
 .gallery-item .gallery-item-info {
     position: absolute;
     bottom: 0;
@@ -254,4 +283,3 @@ body {
 .hidden {
     display: none !important;
 }
-
