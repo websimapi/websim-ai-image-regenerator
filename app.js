@@ -43,7 +43,8 @@ function App() {
                 gi.id,
                 gi.url,
                 gi.style,
-                gi.user_id, -- Ensure user_id is selected
+                gi.user_id,
+                gi.created_at,
                 u.username
             FROM public.gallery_images gi
             JOIN public.user u ON gi.user_id = u.id
@@ -207,8 +208,10 @@ function App() {
 
     const addToGallery = async () => {
         if (!generatedImageUrl) return;
+        showStatus('Adding to gallery...', 'info');
         try {
-            await room.collection('gallery_images').create({
+            // Use upsert for creating records to ensure robustness.
+            await room.collection('gallery_images').upsert({
                 url: generatedImageUrl,
                 style: selectedStyle,
             });
