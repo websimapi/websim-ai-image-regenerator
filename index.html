@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Regenerator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .camera-section {
+            text-align: center;
+        }
+
+        #videoPreview {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        #imagePreview {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #4834d4, #686de0);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #00d2d3, #54a0ff);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .style-selector {
+            margin: 20px 0;
+        }
+
+        .style-selector label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .style-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .style-option:hover,
+        .style-option.selected {
+            border-color: #fff;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .result-section {
+            display: none;
+        }
+
+        #generatedImage {
+            width: 100%;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .gallery-section {
+            display: none;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .status-message {
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+
+        .nav-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 5px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .nav-tab.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 AI Image Regenerator</h1>
+            <p>Capture reality, reimagine with AI</p>
+        </div>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showTab('camera')">📷 Camera</div>
+            <div class="nav-tab" onclick="showTab('gallery')">🖼️ Gallery</div>
+        </div>
+
+        <div id="cameraTab">
+            <div class="section camera-section">
+                <video id="videoPreview" autoplay muted playsinline></video>
+                <img id="imagePreview" alt="Captured image">
+                
+                <div id="cameraControls">
+                    <button class="btn" onclick="startCamera()">📷 Start Camera</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Choose File</button>
+                    <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+                </div>
+
+                <div id="captureControls" class="hidden">
+                    <button class="btn" onclick="capturePhoto()">📸 Capture</button>
+                    <button class="btn btn-secondary" onclick="stopCamera()">❌ Stop</button>
+                </div>
+
+                <div id="imageControls" class="hidden">
+                    <button class="btn btn-secondary" onclick="retakePhoto()">🔄 Retake</button>
+                    <button class="btn btn-success" onclick="analyzeImage()">✨ Generate AI Version</button>
+                </div>
+            </div>
+
+            <div class="section style-selector hidden" id="styleSelector">
+                <label>Choose Generation Style:</label>
+                <div class="style-grid">
+                    <div class="style-option selected" data-style="photorealistic">
+                        📸 Photorealistic
+                    </div>
+                    <div class="style-option" data-style="cartoon">
+                        🎨 Cartoon
+                    </div>
+                    <div class="style-option" data-style="anime">
+                        🌸 Anime
+                    </div>
+                    <div class="style-option" data-style="oil_painting">
+                        🖼️ Oil Painting
+                    </div>
+                    <div class="style-option" data-style="watercolor">
+                        🎭 Watercolor
+                    </div>
+                    <div class="style-option" data-style="sketch">
+                        ✏️ Sketch
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="section result-section" id="resultSection">
+                <img id="generatedImage" alt="Generated image">
+                <div style="text-align: center;">
+                    <button class="btn btn-success" onclick="saveImage()">💾 Save to Device</button>
+                    <button class="btn" onclick="addToGallery()">🖼️ Add to Gallery</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="galleryTab" class="hidden">
+            <div class="section gallery-section">
+                <h3>Your AI Generated Images</h3>
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Gallery items will be added here -->
+                </div>
+                <div id="emptyGallery" style="text-align: center; opacity: 0.7; margin-top: 40px;">
+                    <p>No images yet. Generate some AI masterpieces! 🎨</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStream = null;
+        let capturedImageDataUrl = null;
+        let generatedImageUrl = null;
+        let selectedStyle = 'photorealistic';
+        let gallery = JSON.parse(localStorage.getItem('aiImageGallery') || '[]');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupStyleSelectors();
+            loadGallery();
+        });
+
+        function showTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[onclick="showTab('${tab}')"]`).classList.add('active');
+            
+            if (tab === 'camera') {
+                document.getElementById('cameraTab').classList.remove('hidden');
+                document.getElementById('galleryTab').classList.add('hidden');
+            } else {
+                document.getElementById('cameraTab').classList.add('hidden');
+                document.getElementById('galleryTab').classList.remove('hidden');
+            }
+        }
+
+        function setupStyleSelectors() {
+            document.querySelectorAll('.style-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.style-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedStyle = this.dataset.style;
+                });
+            });
+        }
+
+        async function startCamera() {
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+                
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('videoPreview');
+                video.srcObject = currentStream;
+                video.style.display = 'block';
+                
+                document.getElementById('cameraControls').classList.add('hidden');
+                document.getElementById('captureControls').classList.remove('hidden');
+                
+                showStatus('Camera ready! 📸', 'success');
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showStatus('Camera access denied. Please use file upload instead.', 'error');
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('videoPreview');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            capturedImageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            
+            const imagePreview = document.getElementById('imagePreview');
+            imagePreview.src = capturedImageDataUrl;
+            imagePreview.style.display = 'block';
+            
+            video.style.display = 'none';
+            document.getElementById('captureControls').classList.add('hidden');
+            document.getElementById('imageControls').classList.remove('hidden');
+            document.getElementById('styleSelector').classList.remove('hidden');
+            
+            stopCamera();
+            showStatus('Photo captured! Choose a style and generate. ✨', 'success');
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    capturedImageDataUrl = e.target.result;
+                    const imagePreview = document.getElementById('imagePreview');
+                    imagePreview.src = capturedImageDataUrl;
+                    imagePreview.style.display = 'block';
+                    
+                    document.getElementById('cameraControls').classList.add('hidden');
+                    document.getElementById('imageControls').classList.remove('hidden');
+                    document.getElementById('styleSelector').classList.remove('hidden');
+                    
+                    showStatus('Image loaded! Choose a style and generate. ✨', 'success');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function retakePhoto() {
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('imageControls').classList.add('hidden');
+            document.getElementById('styleSelector').classList.add('hidden');
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('cameraControls').classList.remove('hidden');
+            capturedImageDataUrl = null;
+            generatedImageUrl = null;
+            hideStatus();
+        }
+
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+        }
+
+        async function analyzeImage() {
+            if (!capturedImageDataUrl) return;
+            
+            showProgress();
+            showStatus('Analyzing image with AI... 🧠', 'info');
+            
+            try {
+                // Step 1: Analyze the image
+                const analysisCompletion = await websim.chat.completions.create({
+                    messages: [
+                        {
+                            role: "user",
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `Analyze this image in great detail. Describe everything you see including:
+                                    - Main subjects and objects
+                                    - Colors, lighting, and atmosphere
+                                    - Setting and background
+                                    - Composition and perspective
+                                    - Any interesting details or textures
+                                    - The overall mood or feeling
+                                    
+                                    Provide a comprehensive description that would allow someone to recreate this image.`
+                                },
+                                {
+                                    type: "image_url",
+                                    image_url: { url: capturedImageDataUrl }
+                                }
+                            ]
+                        }
+                    ]
+                });
+
+                const imageDescription = analysisCompletion.content;
+                showStatus('Creating AI version... ✨', 'info');
+                
+                // Step 2: Generate the new image based on the analysis and selected style
+                const stylePrompts = {
+                    photorealistic: 'photorealistic, high quality, professional photography, detailed',
+                    cartoon: 'cartoon style, animated, colorful, fun, Disney-like animation',
+                    anime: 'anime style, manga art, Japanese animation, detailed anime illustration',
+                    oil_painting: 'oil painting style, classical art, painterly, artistic brushstrokes',
+                    watercolor: 'watercolor painting, soft colors, artistic, painted texture',
+                    sketch: 'pencil sketch, hand-drawn, artistic sketch, black and white or minimal color'
+                };
+
+                const finalPrompt = `${imageDescription}, rendered in ${stylePrompts[selectedStyle]} style`;
+                
+                const result = await websim.imageGen({
+                    prompt: finalPrompt,
+                    aspect_ratio: "1:1"
+                });
+
+                generatedImageUrl = result.url;
+                
+                document.getElementById('generatedImage').src = generatedImageUrl;
+                document.getElementById('resultSection').classList.remove('hidden');
+                
+                hideProgress();
+                showStatus('AI version generated successfully! 🎉', 'success');
+                
+            } catch (error) {
+                console.error('Error generating image:', error);
+                hideProgress();
+                showStatus('Failed to generate image. Please try again.', 'error');
+            }
+        }
+
+        function saveImage() {
+            if (!generatedImageUrl) return;
+            
+            const link = document.createElement('a');
+            link.download = `ai-generated-${Date.now()}.png`;
+            link.href = generatedImageUrl;
+            link.click();
+            
+            showStatus('Image saved! 💾', 'success');
+        }
+
+        function addToGallery() {
+            if (!generatedImageUrl) return;
+            
+            const galleryItem = {
+                url: generatedImageUrl,
+                timestamp: Date.now(),
+                style: selectedStyle
+            };
+            
+            gallery.unshift(galleryItem);
+            localStorage.setItem('aiImageGallery', JSON.stringify(gallery));
+            loadGallery();
+            
+            showStatus('Added to gallery! 🖼️', 'success');
+        }
+
+        function loadGallery() {
+            const galleryGrid = document.getElementById('galleryGrid');
+            const emptyGallery = document.getElementById('emptyGallery');
+            
+            if (gallery.length === 0) {
+                emptyGallery.style.display = 'block';
+                galleryGrid.innerHTML = '';
+                return;
+            }
+            
+            emptyGallery.style.display = 'none';
+            galleryGrid.innerHTML = gallery.map((item, index) => `
+                <div class="gallery-item" onclick="viewGalleryImage(${index})">
+                    <img src="${item.url}" alt="AI Generated Image" loading="lazy">
+                </div>
+            `).join('');
+        }
+
+        function viewGalleryImage(index) {
+            const item = gallery[index];
+            // Create a modal or new window to view the full image
+            window.open(item.url, '_blank');
+        }
+
+        function showProgress() {
+            document.getElementById('progressBar').style.display = 'block';
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                document.getElementById('progressFill').style.width = progress + '%';
+            }, 500);
+            
+            // Store interval to clear it later
+            window.currentProgressInterval = interval;
+        }
+
+        function hideProgress() {
+            if (window.currentProgressInterval) {
+                clearInterval(window.currentProgressInterval);
+            }
+            document.getElementById('progressFill').style.width = '100%';
+            setTimeout(() => {
+                document.getElementById('progressBar').style.display = 'none';
+                document.getElementById('progressFill').style.width = '0%';
+            }, 500);
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            
+            // Auto-hide after 3 seconds for success messages
+            if (type === 'success') {
+                setTimeout(hideStatus, 3000);
+            }
+        }
+
+        function hideStatus() {
+            document.getElementById('statusMessage').style.display = 'none';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            stopCamera();
+        });
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
