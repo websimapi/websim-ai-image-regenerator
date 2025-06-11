@@ -1,0 +1,21 @@
+{
+  "database": {
+    "schema": {
+      "gallery_images": {
+        "id": {
+          "type": "uuid",
+          "description": "The unique identifier for the gallery image"
+        },
+        "url": {
+          "type": "text",
+          "description": "URL of the generated image"
+        },
+        "style": {
+          "type": "text",
+          "description": "The style used for generation"
+        }
+      }
+    }
+  }
+}
+
